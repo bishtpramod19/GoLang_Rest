@@ -4,10 +4,7 @@ import (
 	"Banking/errs"
 	"Banking/logger"
 	"database/sql"
-	"fmt"
 	"log"
-	"os"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -22,11 +19,11 @@ func (d CustomerRespositoryDB) FindAll(status string) ([]Customer, *errs.AppErro
 	var err error
 	customers := make([]Customer, 0)
 	if status == "" {
-		findAllSql := "select customer_id, name, city, zipcode, date_of_birth, status from customers"
+		findAllSql := "select customer_id, name, city, zipcode, date_of_birth, status from banking.customers"
 		err = d.client.Select(&customers, findAllSql)
 
 	} else {
-		findAllSql := "select customer_id, name, city, zipcode, date_of_birth, status from customers where status=?"
+		findAllSql := "select customer_id, name, city, zipcode, date_of_birth, status from banking.customers where status=?"
 		err = d.client.Select(&customers, findAllSql, status)
 
 	}
@@ -41,7 +38,7 @@ func (d CustomerRespositoryDB) FindAll(status string) ([]Customer, *errs.AppErro
 }
 
 func (d CustomerRespositoryDB) ByID(id string) (*Customer, *errs.AppError) {
-	customerSql := "select customer_id, name, city, zipcode, date_of_birth, status from customers where customer_id = ?"
+	customerSql := "select customer_id, name, city, zipcode, date_of_birth, status from banking.customers where customer_id = ?"
 
 	var c Customer
 	err := d.client.Get(&c, customerSql, id)
@@ -60,25 +57,8 @@ func (d CustomerRespositoryDB) ByID(id string) (*Customer, *errs.AppError) {
 
 }
 
-func NewCustomerRepositoryDb() CustomerRespositoryDB {
-	dbUser := os.Getenv("db_user")
-	dbPasswd := os.Getenv("db_password")
-	//dbAddr := os.Getenv("db_add")
-	//dbPort := os.Getenv("db_port ")
-	dbName := os.Getenv("db_name")
+func NewCustomerRepositoryDb(dbClient *sqlx.DB) CustomerRespositoryDB {
 
-	dataSource := fmt.Sprintf("%s:%s@/%s", dbUser, dbPasswd, dbName)
-	client, err := sqlx.Open("mysql", dataSource)
-	//client, err := sqlx.Open("mysql", "banking:banking@123@/banking")
-
-	if err != nil {
-		panic(err)
-	}
-	// See "Important settings" section.
-	client.SetConnMaxLifetime(time.Minute * 3)
-	client.SetMaxOpenConns(10)
-	client.SetMaxIdleConns(10)
-
-	return CustomerRespositoryDB{client: client}
+	return CustomerRespositoryDB{dbClient}
 
 }
